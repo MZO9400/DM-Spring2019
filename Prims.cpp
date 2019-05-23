@@ -16,15 +16,17 @@
 ** half is just the repeated edges, and any node's weight from itself is zero
 */
 
+typedef unsigned short int uint2;
+typedef unsigned long long int uint64;
 
 /*
 ** An edge contains a starting point, an ending point, and a weight associated
 ** to it. I've made a structure so it is possible to make a bundled vector array
 */
 struct Edge {
-    unsigned short int start;
-    unsigned short int end;
-    unsigned long long int weight;
+    uint2 start;
+    uint2 end;
+    uint64 weight;
 };
 
 /* An array of edges is same as a tree */
@@ -38,29 +40,29 @@ std::ostream& operator<<(std::ostream& _os, const Edge& ed) {
 }
 
 /* This is the primary method of this program, this method takes a 2D Vector
-** of integers and returns a tree
+** of integers and returns a tree and its maximum weight.
 */
-Tree Prims_MST(const std::vector<std::vector<int>>&
+std::pair<Tree, uint64> Prims_MST(const std::vector<std::vector<int>>&
                             graph) {
     /*
     ** STL <set> is a library used here which lets us save the vertices that are
     ** not visited yet. The library contains const data so editing is impossible
-    ** once the data is added. However, ability to delete the data is there so I
-    ** used that ability to save the unvisited nodes and then delete them as I
+    ** once the data is added. However, ability to delete the data is there so we
+    ** used that ability to save the unvisited nodes and then delete them as we
     ** visit the nodes one by one.
     */
-    std::set<unsigned short int> unvisitedNodes;
-    std::set<unsigned short int> visitedNodes;
+    std::set<uint2> unvisitedNodes;
+    std::set<uint2> visitedNodes;
 
     /*
-    ** I've used std::vector here typedef'd as "Tree" (see Line17) because it is
+    ** we have used std::vector here typedef'd as "Tree" (see Line17) because it is
     ** a standard template library and has certain advantages over normal
     ** arrays. The ability to use iterators and auto as well as faster insertion
     ** makes vectors better compared to cstyle arrays
     */
     Tree MST;
 
-    // Starting point is always visitedNodes at no cost
+    // Starting point is always visitedNodes with no cost
     visitedNodes.insert(0);
 
     // Insert all nodes to unvisitedNodes
@@ -70,7 +72,7 @@ Tree Prims_MST(const std::vector<std::vector<int>>&
 
     while (!unvisitedNodes.empty()) {
         // Shortest edge is initialized with -1 as start and end, and INT_MAX as weight
-        Edge shortestEdge = {-1, -1, (unsigned long long int)(-1)};
+        Edge shortestEdge = {-1, -1, INT_MAX};
 
         // Put all edges (with their weights) from nodes that are in visitedNodes
         for (auto node : visitedNodes) {
@@ -95,12 +97,15 @@ Tree Prims_MST(const std::vector<std::vector<int>>&
         unvisitedNodes.erase(shortestEdge.end);
         visitedNodes.insert(shortestEdge.end);
     }
-
-    return MST;
+    uint64 MSTWeight = 0;
+    for (const auto& iter : MST) {
+        MSTWeight += iter.weight;
+    }
+    return std::pair<Tree, uint64>(MST,MSTWeight);
 }
 
 std::vector<std::vector<int>> makeGraph() {
-    unsigned short int NodesCount;
+    uint2 NodesCount;
     std::cout << "Enter the number of vertices: ";
     std::cin >> NodesCount;
     int** GraphMatrix = new int*[NodesCount];
@@ -108,15 +113,18 @@ std::vector<std::vector<int>> makeGraph() {
     for (int i = 0; i < NodesCount; ++i) {
         GraphMatrix[i] = new int[NodesCount];
     }
-
+    system("cls");
     for (int i = 0; i < NodesCount; i++) {
+        std::cout << "Enter 0 if there is no edge between the vertices\n\n\n";
         for (int j = i + 1; j < NodesCount; j++) {
             std::cout << "Enter Row " << i + 1 << " Column " << j + 1
                       << "\'s value: ";
             std::cin >> GraphMatrix[i][j];
+            if (!GraphMatrix[i][j]) {
+                GraphMatrix[i][j] = INT_MAX;
+            }
         }
-
-        std::cout << std::endl << std::endl;
+        system("cls");
     }
 
     for (int i = 0; i < NodesCount; i++) {
@@ -154,9 +162,11 @@ std::vector<std::vector<int>> makeGraph() {
     return graph;
 }
 
-
 int main() {
-    for (auto const& iter : Prims_MST(makeGraph())) {
+    std::pair<Tree, uint64> pair = Prims_MST(makeGraph());
+    for (auto const& iter : pair.first) {
         std::cout << iter << '\n';
     }
+    std::cout << "\n" << "The weight of minimum spanning tree is: "
+              << pair.second;
 }
